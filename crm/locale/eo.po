@@ -87,12 +87,12 @@ msgstr "crwdns152679:0crwdne152679:0"
 msgid "51-200"
 msgstr "crwdns152681:0crwdne152681:0"
 
-#. Paragraph text in the Frappe CRM Workspace
+#. Paragraph text in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "<b>META</b>"
 msgstr "crwdns152683:0crwdne152683:0"
 
-#. Paragraph text in the Frappe CRM Workspace
+#. Paragraph text in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "<b>SHORTCUTS</b>"
 msgstr "crwdns152685:0crwdne152685:0"
@@ -101,7 +101,7 @@ msgstr "crwdns152685:0crwdne152685:0"
 msgid "<p>Dear {{ lead_name }},</p>\\n\\n<p>This is a reminder for the payment of {{ grand_total }}.</p>\\n\\n<p>Thanks,</p>\\n<p>Frappé</p>"
 msgstr "crwdns152687:0{{ lead_name }}crwdnd152687:0{{ grand_total }}crwdne152687:0"
 
-#. Header text in the Frappe CRM Workspace
+#. Header text in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "<span class=\"h5\"><b>PORTAL</b></span>"
 msgstr "crwdns152689:0crwdne152689:0"
@@ -365,7 +365,7 @@ msgstr "crwdns152791:0crwdne152791:0"
 msgid "Assignment"
 msgstr "crwdns152793:0crwdne152793:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Assignment Rule"
 msgstr "crwdns152795:0crwdne152795:0"
@@ -540,7 +540,7 @@ msgstr "crwdns152863:0crwdne152863:0"
 msgid "CRM Organization"
 msgstr "crwdns152865:0crwdne152865:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "CRM Portal Page"
 msgstr "crwdns152867:0crwdne152867:0"
@@ -774,7 +774,7 @@ msgstr "crwdns152957:0crwdne152957:0"
 msgid "Communication Status"
 msgstr "crwdns152959:0crwdne152959:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Communication Statuses"
 msgstr "crwdns152961:0crwdne152961:0"
@@ -841,7 +841,7 @@ msgstr "crwdns152987:0crwdne152987:0"
 
 #. Label of the contacts_tab (Tab Break) field in DocType 'CRM Deal'
 #. Label of the contacts (Table) field in DocType 'CRM Deal'
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/doctype/crm_deal/crm_deal.json
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 #: frontend/src/pages/Contact.vue:242 frontend/src/pages/MobileContact.vue:235
@@ -994,7 +994,7 @@ msgstr "crwdns153037:0crwdne153037:0"
 msgid "Deal Status"
 msgstr "crwdns153039:0crwdne153039:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Deal Statuses"
 msgstr "crwdns153041:0crwdne153041:0"
@@ -1009,7 +1009,7 @@ msgstr "crwdns153043:0crwdne153043:0"
 msgid "Deal updated"
 msgstr "crwdns153045:0crwdne153045:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 #: frontend/src/pages/Deal.vue:471 frontend/src/pages/MobileContact.vue:314
 #: frontend/src/pages/MobileDeal.vue:393
@@ -1629,7 +1629,7 @@ msgstr "crwdns153279:0crwdne153279:0"
 
 #. Name of a Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
-msgid "Frappe CRM"
+msgid "Nexo CRM"
 msgstr "crwdns153281:0crwdne153281:0"
 
 #. Option for the 'Weekly Off' (Select) field in DocType 'CRM Holiday List'
@@ -1819,7 +1819,7 @@ msgstr "crwdns153347:0crwdne153347:0"
 msgid "Incoming call..."
 msgstr "crwdns153349:0crwdne153349:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Industries"
 msgstr "crwdns153351:0crwdne153351:0"
@@ -2054,12 +2054,12 @@ msgstr "crwdns153433:0crwdne153433:0"
 msgid "Lead Owner cannot be same as the Lead Email Address"
 msgstr "crwdns153435:0crwdne153435:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Lead Sources"
 msgstr "crwdns153437:0crwdne153437:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Lead Statuses"
 msgstr "crwdns153439:0crwdne153439:0"
@@ -2068,7 +2068,7 @@ msgstr "crwdns153439:0crwdne153439:0"
 msgid "Lead updated"
 msgstr "crwdns153441:0crwdne153441:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 #: frontend/src/pages/Lead.vue:461 frontend/src/pages/MobileLead.vue:297
 msgid "Leads"
@@ -2689,7 +2689,7 @@ msgstr "crwdns153677:0crwdne153677:0"
 msgid "Organization updated"
 msgstr "crwdns153679:0crwdne153679:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 #: frontend/src/pages/MobileOrganization.vue:222
 #: frontend/src/pages/Organization.vue:243
@@ -3086,7 +3086,7 @@ msgstr "crwdns153833:0crwdne153833:0"
 #. Label of the sla (Link) field in DocType 'CRM Deal'
 #. Label of the sla_tab (Tab Break) field in DocType 'CRM Lead'
 #. Label of the sla (Link) field in DocType 'CRM Lead'
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/doctype/crm_deal/crm_deal.json
 #: crm/fcrm/doctype/crm_lead/crm_lead.json
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
@@ -3469,7 +3469,7 @@ msgstr "crwdns153955:0crwdne153955:0"
 msgid "Telephony Settings"
 msgstr "crwdns153957:0crwdne153957:0"
 
-#. Label of a shortcut in the Frappe CRM Workspace
+#. Label of a shortcut in the Nexo CRM Workspace
 #: crm/fcrm/workspace/frappe_crm/frappe_crm.json
 msgid "Territories"
 msgstr "crwdns153959:0crwdne153959:0"
@@ -3599,7 +3599,7 @@ msgid "Total Holidays"
 msgstr "crwdns154007:0crwdne154007:0"
 
 #: frontend/src/components/SignupBanner.vue:12
-msgid "Try Frappe CRM for free with a 14-day trial."
+msgid "Try Nexo CRM for free with a 14-day trial."
 msgstr "crwdns154009:0crwdne154009:0"
 
 #. Option for the 'Weekly Off' (Select) field in DocType 'CRM Holiday List'
