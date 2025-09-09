@@ -577,6 +577,17 @@ def fetch_all_leads():
         return {"success": False, "error": f"Processing failed: {str(e)}"}
 
 @frappe.whitelist()
+def enqueue_push_to_stagging():
+    # run your existing function in background
+    frappe.enqueue(
+        'crm.api.meta.push_to_stagging',
+        queue='long',
+        timeout=3600,
+        job_id='meta-push-to-stagging'  # prefer job_id over job_name in v15+
+    )
+    return {"message": "enqueued"}
+
+@frappe.whitelist()
 def push_to_stagging():
     try:
         # Step 1: Get all leads from all forms
