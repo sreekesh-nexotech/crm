@@ -146,7 +146,7 @@ def _to_epoch(v) -> Optional[int]:
     except Exception:
         return None
 
-# ---------- Security: verify X-Hub-Signature-256 ----------
+# ---------- Security: verify X-Hub-Signature (sha256 preferred) ----------
 def _signature_ok(raw: bytes) -> bool:
     secret = _app_secret()
     if not secret:
@@ -162,9 +162,15 @@ def _signature_ok(raw: bytes) -> bool:
         algo, received = header.split("=", 1)
     except ValueError:
         return False
-    if algo.lower() != "sha256":
+    algo = (algo or "").lower()
+    body = raw or b""
+    if algo == "sha256":
+        expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    elif algo == "sha1":
+        # Accept legacy sha1 if sent by Meta
+        expected = hmac.new(secret.encode(), body, hashlib.sha1).hexdigest()
+    else:
         return False
-    expected = hmac.new(secret.encode(), raw or b"", hashlib.sha256).hexdigest()
     return hmac.compare_digest(received, expected)
 
 # ---------- Graph helpers ----------
@@ -578,13 +584,30 @@ def fetch_all_leads():
 
 @frappe.whitelist()
 def enqueue_push_to_stagging():
-    # run your existing function in background
-    frappe.enqueue(
-        'crm.api.meta.push_to_stagging',
-        queue='long',
-        timeout=3600,
-        job_id='meta-push-to-stagging'  # prefer job_id over job_name in v15+
-    )
+    # run your existing function in background (dedupe by name)
+    job_name = "meta-push-to-stagging"
+    try:
+        enqueue_unique = getattr(frappe, "enqueue_unique", None)
+        if callable(enqueue_unique):
+            frappe.enqueue_unique(
+                'crm.api.meta.push_to_stagging',
+                queue='long',
+                timeout=3600,
+                job_name=job_name,
+            )
+        else:
+            if not frappe.is_job_queued('crm.api.meta.push_to_stagging', job_name=job_name):
+                frappe.enqueue(
+                    'crm.api.meta.push_to_stagging',
+                    queue='long',
+                    timeout=3600,
+                    job_name=job_name,
+                    track_job=True,
+                    enqueue_after_commit=True,
+                )
+    except Exception as e:
+        frappe.log_error(f"enqueue_push_to_stagging failed: {str(e)}", "Meta Integration Error")
+        return {"message": f"enqueue failed: {str(e)}"}
     return {"message": "enqueued"}
 
 @frappe.whitelist()
@@ -761,6 +784,14 @@ def _insert_staging(rec: Dict[str, Any]) -> str:
     ct_norm = _normalize_created_time(rec.get("created_time"))  # "YYYY-MM-DD HH:MM:SS" or None
     ct_epoch = _to_epoch(ct_norm)  # <-- convert to epoch int for BIGINT
 
+    # Safely get source IP (worker may not have frappe.request)
+    source_ip = ""
+    try:
+        if hasattr(frappe, 'request') and frappe.request:
+            source_ip = frappe.request.headers.get("X-Forwarded-For") or frappe.request.remote_addr or ""
+    except Exception:
+        source_ip = ""
+
     doc = frappe.get_doc({
         "doctype": "CRM Meta Ads Lead",
         "first_name":      _get(rec, "first_name"),
@@ -782,7 +813,7 @@ def _insert_staging(rec: Dict[str, Any]) -> str:
         "campaign_id":     _get(rec, "campaign_id"),
         "created_time":    ct_epoch,  # <-- BIGINT expects epoch int
         "raw_payload":     rec.get("raw_payload") or "",
-        "source_ip":       frappe.request.headers.get("X-Forwarded-For") or frappe.request.remote_addr,
+        "source_ip":       source_ip,
         "processed":       rec.get("processed", 0),
         "processed_on":    rec.get("processed_on") or None,
         "target_lead":     _get(rec, "target_lead"),
@@ -907,7 +938,7 @@ def fetch_and_insert_to_staging(leadgen_id: str, **kwargs) -> Dict[str, Any]:
         frappe.log_error(f"fetch_and_insert_lead_to_staging failed: {str(e)}, leadgen_id: {leadgen_id}", "Meta Integration Error")
         return {"success": False, "error": f"Processing failed: {str(e)}"}
 
-# ---------- Webhook entrypoint ----------
+# ---------- Webhook entrypoint (FAST ACK + ENQUEUE) ----------
 @frappe.whitelist(allow_guest=True)
 def meta_leads_webhook():
 
@@ -948,6 +979,49 @@ def meta_leads_webhook():
     if not isinstance(payload, dict):
         payload = {}
 
+    # capture raw json BEFORE leaving request context
+    raw_json_str = frappe.as_json(payload)
+
+    # enqueue heavy processing with idempotent job_name
+    job_name = f"meta-webhook-{hashlib.sha1(raw).hexdigest()[:16]}"
+    try:
+        enqueue_unique = getattr(frappe, "enqueue_unique", None)
+        if callable(enqueue_unique):
+            frappe.enqueue_unique(
+                "crm.api.meta._process_meta_webhook_async",
+                queue="long",
+                timeout=1800,
+                job_name=job_name,
+                payload=payload,
+                raw_json_str=raw_json_str,
+            )
+        else:
+            if not frappe.is_job_queued("crm.api.meta._process_meta_webhook_async", job_name=job_name):
+                frappe.enqueue(
+                    "crm.api.meta._process_meta_webhook_async",
+                    queue="long",
+                    timeout=1800,
+                    job_name=job_name,
+                    payload=payload,
+                    raw_json_str=raw_json_str,
+                    track_job=True,
+                    enqueue_after_commit=True,
+                )
+    except Exception as e:
+        frappe.log_error(f"Enqueue failed: {str(e)}", "Meta Integration Error")
+        # We still ACK to avoid Meta retries; your logs will show the failure.
+
+    # ACK fast
+    frappe.response["type"] = "json"
+    frappe.response["message"] = {"ok": True}
+    return
+
+# ---------- Worker that processes the webhook payload ----------
+def _process_meta_webhook_async(payload: Dict[str, Any], raw_json_str: str) -> Dict[str, Any]:
+    """
+    This runs in a background worker (no frappe.request).
+    Contains the same heavy logic previously executed inline in meta_leads_webhook().
+    """
     inserted = []
 
     def save_record(rec: Dict[str, Any], raw_json: str):
@@ -1030,8 +1104,6 @@ def meta_leads_webhook():
             frappe.log_error(f"Meta save_record failed: {str(e)}, Record: {rec}", "Meta Integration Error")
             raise
 
-    raw_json_str = frappe.as_json(payload)
-
     def sync_missing_leads():
         try:
             # Get all leadgen_ids from CRM Meta Ads Lead
@@ -1089,9 +1161,10 @@ def meta_leads_webhook():
                 "message": f"Sync check failed: {str(e)}"
             }
 
-    try:
-        processed_any = False
+    # ---- replicate your current branching logic, but in worker context ----
+    processed_any = False
 
+    try:
         if "entry" in payload:
             for entry in (payload.get("entry") or []):
                 page_id = _get(entry, "id")
@@ -1130,9 +1203,7 @@ def meta_leads_webhook():
             rec["created_time"] = _normalize_created_time(_get(val, "created_time"))
             rec["page_id"] = _get(val, "page_id") or _get(payload, "page_id")
             if not rec.get("leadgen_id"):
-                frappe.response["type"] = "json"
-                frappe.response["message"] = {"ok": False, "error": "Meta Lead ID (leadgen_id) missing in value{}"}
-                return
+                return {"ok": False, "error": "Meta Lead ID (leadgen_id) missing in value{}"}
             save_record(rec, raw_json_str)
             processed_any = True
 
@@ -1164,20 +1235,17 @@ def meta_leads_webhook():
 
         if not processed_any:
             # Explicit, actionable response for unknown shapes
-            frappe.response["type"] = "json"
-            frappe.response["message"] = {
+            return {
                 "ok": False,
                 "error": "Unsupported payload shape",
                 "hint": "Expected: {entry:[{changes:[{field:'leadgen', value:{...}}]}]} OR {field:'leadgen', value:{...}} OR top-level leadgen_id.",
                 "received_keys": list(payload.keys()),
             }
-            return
 
         # After processing webhook data, check for missing leads and sync if needed
         sync_results = sync_missing_leads()
 
-        frappe.response["type"] = "json"
-        frappe.response["message"] = {
+        return {
             "ok": True,
             "inserted": inserted,
             "count": len(inserted),
@@ -1185,7 +1253,5 @@ def meta_leads_webhook():
         }
 
     except Exception as e:
-        frappe.log_error(f"Meta webhook processing failed: {str(e)}, Payload: {payload}", "Meta Integration Error")
-        frappe.response["type"] = "json"
-        frappe.response["message"] = {"ok": False, "error": f"Processing failed: {str(e)}"}
-        return
+        frappe.log_error(f"_process_meta_webhook_async failed: {str(e)} | payload={raw_json_str[:512]}", "Meta Integration Error")
+        return {"ok": False, "error": f"Processing failed: {str(e)}"}
