@@ -726,7 +726,7 @@ def push_to_stagging():
                             value = (field.get("values") or [""])[0]
                             if not value:
                                 continue
-                            if name in ("full_name", "first_name", "name"):
+                            if name in ("full_name", "first_name", "name", "full name"):
                                 rec["first_name"] = rec.get("first_name") or value
                             elif name in ("phone_number", "mobile_no", "phone"):
                                 rec["mobile_no"] = rec.get("mobile_no") or value
@@ -912,7 +912,7 @@ def fetch_and_insert_to_staging(leadgen_id: str, **kwargs) -> Dict[str, Any]:
                     value = (field.get("values") or [""])[0]
                     if not value:
                         continue
-                    if name in ("full_name", "first_name", "name"):
+                    if name in ("full_name", "first_name", "name", "full name"):
                         rec["first_name"] = rec.get("first_name") or value
                     elif name in ("phone_number", "mobile_no", "phone"):
                         rec["mobile_no"] = rec.get("mobile_no") or value
@@ -1071,7 +1071,7 @@ def _process_meta_webhook_async(payload: Dict[str, Any], raw_json_str: str) -> D
                             value = (field.get("values") or [""])[0]
                             if not value:
                                 continue
-                            if name in ("full_name", "first_name", "name"):
+                            if name in ("full_name", "first_name", "name", "full name"):
                                 rec["first_name"] = rec.get("first_name") or value
                             elif name in ("phone_number", "mobile_no", "phone"):
                                 rec["mobile_no"] = rec.get("mobile_no") or value
