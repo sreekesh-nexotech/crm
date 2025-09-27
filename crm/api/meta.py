@@ -320,31 +320,36 @@ def fetch_page_leadgen_forms(page_id: str, page_access_token: str):
     if not page_access_token:
         return {"error": {"message": "page_access_token is required"}}
 
-    url = f"https://graph.facebook.com/{_graph_ver()}/{page_id}/leadgen_forms"
+    all_forms = []
+    next_url = f"https://graph.facebook.com/{_graph_ver()}/{page_id}/leadgen_forms"
     headers = {
         "Authorization": f"Bearer {page_access_token}",
         "Accept": "application/json"
     }
 
     try:
-        r = requests.get(url, headers=headers, timeout=20)
-        try:
-            data = r.json() if r.content else {}
-        except Exception:
-            data = {"raw": r.text}
+        while next_url:
+            r = requests.get(next_url, headers=headers, timeout=20)
+            try:
+                data = r.json() if r.content else {}
+            except Exception:
+                data = {"raw": r.text}
 
-        if r.status_code != 200:
-            frappe.log_error(
-                f"Meta Leadgen Forms GET {r.status_code}: {data} | url={url}",
-                "Meta Integration Error"
-            )
-            return {"error": {"message": f"HTTP {r.status_code}", "details": data}}
+            if r.status_code != 200:
+                frappe.log_error(
+                    f"Meta Leadgen Forms GET {r.status_code}: {data} | url={next_url}",
+                    "Meta Integration Error"
+                )
+                return {"error": {"message": f"HTTP {r.status_code}", "details": data}}
 
-        return data
+            all_forms.extend(data.get("data", []))
+            next_url = data.get("paging", {}).get("next")
+        
+        return {"data": all_forms, "total_count": len(all_forms), "paginated": True}
 
     except Exception as e:
         frappe.log_error(
-            f"Meta Leadgen Forms GET exception: {e} | url={url}",
+            f"Meta Leadgen Forms GET exception: {e} | url={next_url}",
             "Meta Integration Error"
         )
         return {"error": {"message": str(e)}}
