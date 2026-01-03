@@ -1351,17 +1351,33 @@ defineExpose({
 })
 
 // Watchers
+// Debounced reload to prevent excessive reloads
+const debouncedReload = useDebounceFn(() => {
+  reload()
+}, 300)
+
+// Watch specific view properties instead of deep watching the entire object
+// This is much more performant and prevents unnecessary reloads
 watch(
-  () => getView(route.query.view, route.params.viewType, props.doctype),
+  () => {
+    const view = getView(route.query.view, route.params.viewType, props.doctype)
+    // Only watch the properties that should trigger a reload
+    return {
+      name: view?.name,
+      type: view?.type,
+      filters: JSON.stringify(view?.filters || {}),
+      order_by: view?.order_by,
+      columns: view?.columns,
+      rows: view?.rows,
+    }
+  },
   (value, old_value) => {
     if (_.isEqual(value, old_value)) return
-    reload()
+    debouncedReload()
   },
-  { deep: true },
 )
 
-watch([() => route, () => route.params.viewType], (value, old_value) => {
-  if (value[0] === old_value[0] && value[1] === value[0]) return
-  reload()
+watch([() => route.query.view, () => route.params.viewType], () => {
+  debouncedReload()
 })
 </script>

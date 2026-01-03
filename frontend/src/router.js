@@ -3,6 +3,25 @@ import { userResource } from '@/stores/user'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
 
+/**
+ * Wrap a promise with a timeout to prevent navigation deadlock
+ * @param {Promise} promise - The promise to wrap
+ * @param {number} ms - Timeout in milliseconds
+ * @param {string} name - Name of the promise for logging
+ * @returns {Promise} - Promise that rejects on timeout
+ */
+function withTimeout(promise, ms = 5000, name = 'Promise') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => {
+        console.error(`[Router] Timeout waiting for ${name} (${ms}ms)`)
+        reject(new Error(`Timeout waiting for ${name}`))
+      }, ms)
+    ),
+  ])
+}
+
 const routes = [
   {
     path: '/',
@@ -106,38 +125,64 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const { isLoggedIn } = sessionStore()
+  try {
+    const { isLoggedIn } = sessionStore()
 
-  isLoggedIn && (await userResource.promise)
-
-  if (to.name === 'Home' && isLoggedIn) {
-    const { views, getDefaultView } = viewsStore()
-    await views.promise
-
-    let defaultView = getDefaultView()
-    if (!defaultView) {
-      next({ name: 'Leads' })
-      return
+    // Wait for user resource with timeout protection
+    if (isLoggedIn) {
+      try {
+        await withTimeout(userResource.promise, 5000, 'userResource')
+      } catch (error) {
+        console.error('[Router] Failed to load user resource:', error)
+        // Continue navigation even if user resource fails to load
+        // The app can handle missing user data gracefully
+      }
     }
 
-    let { route_name, type, name, is_standard } = defaultView
-    route_name = route_name || 'Leads'
+    if (to.name === 'Home' && isLoggedIn) {
+      const { views, getDefaultView } = viewsStore()
 
-    if (name && !is_standard) {
-      next({ name: route_name, params: { viewType: type }, query: { view: name } })
+      // Wait for views with timeout protection
+      try {
+        await withTimeout(views.promise, 5000, 'views')
+      } catch (error) {
+        console.error('[Router] Failed to load views:', error)
+        // Fallback to default Leads view if views fail to load
+        next({ name: 'Leads' })
+        return
+      }
+
+      let defaultView = getDefaultView()
+      if (!defaultView) {
+        next({ name: 'Leads' })
+        return
+      }
+
+      let { route_name, type, name, is_standard } = defaultView
+      route_name = route_name || 'Leads'
+
+      if (name && !is_standard) {
+        next({ name: route_name, params: { viewType: type }, query: { view: name } })
+      } else {
+        next({ name: route_name, params: { viewType: type } })
+      }
+    } else if (!isLoggedIn) {
+      window.location.href = '/login?redirect-to=/crm'
+    } else if (to.matched.length === 0) {
+      next({ name: 'Invalid Page' })
+    } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
+      let storageKey = to.name === 'Deal' ? 'lastDealTab' : 'lastLeadTab'
+      const activeTab = localStorage.getItem(storageKey) || 'activity'
+      const hash = '#' + activeTab
+      next({ ...to, hash })
     } else {
-      next({ name: route_name, params: { viewType: type } })
+      next()
     }
-  } else if (!isLoggedIn) {
-    window.location.href = '/login?redirect-to=/crm'
-  } else if (to.matched.length === 0) {
-    next({ name: 'Invalid Page' })
-  } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
-    let storageKey = to.name === 'Deal' ? 'lastDealTab' : 'lastLeadTab'
-    const activeTab = localStorage.getItem(storageKey) || 'activity'
-    const hash = '#' + activeTab
-    next({ ...to, hash })
-  } else {
+  } catch (error) {
+    // Global error handler for navigation guard
+    console.error('[Router] Navigation guard error:', error)
+    // Allow navigation to proceed even if guard fails
+    // This prevents the app from freezing completely
     next()
   }
 })
